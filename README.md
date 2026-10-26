@@ -10,7 +10,7 @@ A small native macOS browser built around a sidebar, spaces, and keyboard naviga
 
 The release ZIP contains **Curve.app**, a universal app for **Apple silicon and Intel Macs running macOS 14 or later**. Expand it and move Curve.app to Applications. Release notes include the version and SHA-256 checksum. The Apple silicon build has been tested locally; Intel has been cross-compiled but has not been run on an Intel Mac.
 
-**Curve 0.3.0 is experimental.** The download is ad hoc signed and has no Developer ID signature or Apple notarization. macOS may decline to open it. A Developer ID signed, notarized release is required for normal trusted public distribution.
+**Curve 0.3.1 is experimental.** The download is ad hoc signed and has no Developer ID signature or Apple notarization. macOS may decline to open it. A Developer ID signed, notarized release is required for normal trusted public distribution.
 
 Curve is an independent project inspired by Arc. It is not affiliated with Arc or The Browser Company and does not require an Arc service.
 
@@ -49,6 +49,8 @@ To reproduce the universal ZIP and its checksum with Apple's local toolchain:
 ```
 
 The output is `dist/Curve-macOS.zip` and `dist/SHA256SUMS.txt`. Generated builds and archives are ignored by Git.
+
+The approved Ribbon C artwork is saved in `Resources/Curve-Ribbon-C.png`. Run `./Scripts/make-icon.sh` to regenerate the app's PNG preview and complete macOS ICNS sizes from that source. See [Resources/README.md](Resources/README.md) for the asset record.
 
 For development or the Foundation-only checks:
 

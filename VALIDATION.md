@@ -1,5 +1,16 @@
 # Curve validation record
 
+## Curve 0.3.1 artwork release
+
+Curve 0.3.1 (build 5) was checked on October 26, 2026. This update adopts the approved Ribbon C logo for the app, README, and launch animation. Browser behavior is unchanged from 0.3.0.
+
+- The canonical PNG matches the selected image byte for byte. The source and 1024-pixel preview retain actual alpha transparency. The generated ICNS container has all ten standard/Retina representations from 16 through 1024 pixels.
+- Script syntax, bundle metadata, optimized Apple silicon build, and Intel cross-build passed. The packaged executable contains both `x86_64` and `arm64` slices; Intel execution was not tested.
+- Strict deep signature verification and ZIP CRC checks passed. The 2,725,466-byte ZIP contains only Curve.app; its version is 0.3.1, build 5, and its icon matches the committed ICNS. No profiles, build caches, or Finder metadata payloads are included.
+- The prior browser test evidence below remains scoped to 0.3.0. Browser interactions and live launch animation were not retested for this artwork-only update. CI now regenerates the icon from the canonical PNG before building.
+
+The download remains ad hoc signed, without a Developer ID signature or Apple notarization.
+
 ## Curve 0.3.0 release
 
 Curve 0.3.0 (build 4) was checked on October 26, 2026, on an Apple silicon Mac with macOS 26.6.2 and Swift 6.2.1. It uses bundle identifier `com.toymakers.curve` and the new Curve icon. The prior app and its data were preserved.

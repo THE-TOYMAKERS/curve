@@ -25,6 +25,8 @@ jobs:
         run: |
           zsh -n build.sh run-checks.sh Checks/QA-Fixture/build-qa.sh Scripts/*.sh
           plutil -lint Info.plist
+      - name: Generate Ribbon C app icon
+        run: ./Scripts/make-icon.sh
       - name: Run Foundation checks
         run: swift run --disable-sandbox CoreChecks
       - name: Run keyboard-router checks

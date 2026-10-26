@@ -1,0 +1,10 @@
+.build/
+.build-*/
+.swiftpm/
+.DS_Store
+*.app/
+*.zip
+*.dmg
+dist/
+.qa-run/
+*.log

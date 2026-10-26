@@ -1,0 +1,121 @@
+PASS URL resolution and unsafe schemes
+PASS Legacy start links retain session identities
+PASS Legacy profile copy and existing Curve protection
+PASS Legacy profile copy symlink rejection and rollback
+PASS Space selection and global favorites
+PASS Pinned reset, removal and restore
+PASS Archive protections
+PASS Folders, moves, ordering and repair
+PASS Atomic persistence and corrupt-state recovery
+PASS Arc structure import and repeated-import dedupe
+PASS Arc complete theme import and persistence
+PASS Arc theme-only refresh preserves all other state
+PASS Legacy optional theme and appearance version decode
+PASS Custom title and pinned home roundtrip
+PASS History bounds, atomic persistence and backup recovery
+PASS Malformed import
+16 checks, 122 assertions, 0 failures
+KeyboardRouter: 66 checks, 0 failures
+PASS: real WKWebView HTML/title, JavaScript, stable identity, zoom, find, page host handoff, LRU eviction, active retention, close
+PASS: nonpersistent private stores, persistent regular store, shared private tabs, isolated private windows, shutdown releases sessions and cookies without recreation
+STORE INTEGRATION PASS
+PASS open in split preserves distinct primary and secondary
+PASS custom tab name survives page progress/title callbacks
+PASS custom title persists in session file
+PASS focusSplit targets secondary without replacing primary
+PASS copy Markdown uses focused split with escaped custom title
+PASS focusSplit returns to primary
+PASS clear Today archives tabs reversibly
+PASS restoreLast restores identity and selection
+PASS close last tab leaves valid empty start state
+PASS close shortcut closes window when no tabs remain
+PASS new window actions route all three modes
+PASS close pinned tab resets saved URL and preserves pin
+PASS explicit pin removal is reversible
+PASS duplicate Space copies theme with a new identity
+PASS duplicate Space remaps copied folders and pinned membership
+PASS duplicate Space creates new tab IDs and preserves addresses
+PASS duplicate Space preserves one global favorite
+PASS duplicate Space selects a copied tab
+PASS remove Space archives its tabs and removes its folders
+PASS remove Space preserves the global favorite
+PASS restore removed Space restores original folders and tab IDs
+PASS restore removed Space preserves original primary split and orientation instead of archive iteration order
+PASS repeated Space restore does not duplicate tabs
+PASS Space restore never revives primary or split references removed from the archive
+PASS move tab clears stale pane focus
+PASS foreign Space split moves tab into the active Space
+PASS private session never writes state directory
+PASS private visits never change persistent history
+PASS private history exists only in window memory
+PASS new normal window seeds saved normal state while private window is active
+PASS private session never leaks into a new normal window's saved state
+PASS private shutdown clears in-memory session and engine views
+Shortcut actions: 82 checks passed, 0 failures
+PASS tab drop inserts before the hovered row
+PASS tab drop inserts after the hovered row
+PASS reordering preserves page selection and MRU time
+PASS Today to pinned saves its home address
+PASS pinned to Today clears folder and home address
+PASS drag into favorites creates a global favorite
+PASS favorite remains visible in another space
+PASS folder drop pins and reveals the moved tab
+PASS moving active tab to another space repairs selection and focus
+PASS right split drop preserves primary and adds secondary
+PASS left split drop places dragged tab first
+PASS self split drop is a no-op
+PASS folder cannot move into its own descendant
+PASS nesting folder updates descendant paths and preserves tab membership
+PASS folder edge drop reorders and reparents as a sibling
+PASS cross-space folder move carries the entire tree and its tabs
+PASS folder can return to the root of the active space
+PASS folder path collision gets a unique name across its descendants
+PASS space reorder changes order without changing current space
+PASS invalid local folder destination cannot mutate state
+PASS invalid cross-window drop rolls back the entire snapshot copy
+PASS cross-window tab drop copies with fresh identity and leaves source unchanged
+PASS cross-window folder copy remaps every folder and tab membership
+PASS cross-window folder copy cannot capture a cloned destination tree with matching paths
+PASS cross-window space copy creates a new space and preserves source
+PASS external URL drop creates a pinned folder tab
+PASS URL drops reject scripts files and non-URL text
+PASS failed external URL drop restores tab selection and the entire state
+PASS legacy string drops retain supported behavior
+PASS internal item provider uses a dedicated type instead of text-field data
+PASS native item provider vends its eager custom-data snapshot
+PASS receiving windows expose split targets without dimming matching cloned tabs
+PASS source cancellation clears drag feedback in every receiving window
+PASS rejected cross-window drop clears its pending source and receiver sessions
+PASS drag stays alive until an actual release event even without a physical mouse button
+PASS fast release fallback prefers the nested row target and inserts after its midpoint
+PASS release outside registered targets cannot move a tab
+PASS favorite insertion geometry follows its horizontal midpoint
+PASS off-viewport row geometry cannot capture a header or footer drop
+PASS a partially visible row keeps its original insertion midpoint
+PASS registered release fallback preserves cross-window copy and lifecycle semantics
+PASS a provider from a finished internal drag cannot replay as a copied tab
+PASS an incoming native drag token can commit only once
+PASS motion from an escaped internal gesture cannot restart it or retain its preview
+PASS hovering a folder expands it after the delay
+PASS cancel restores hover expansion and clears drag feedback
+PASS hovering a space switches to it after the delay
+PASS cancel restores original space without moving the dragged tab
+PASS successful drop keeps the hovered space and clears the session
+PASS drag snapshot serialization preserves the folder bundle
+PASS dragged order and memberships survive session persistence
+PASS unrelated favorites remain intact through all drag operations
+PASS folder creation assigns bounded unique sibling names including case variants
+PASS conflicting folder rename preserves the complete subtree and tab identities
+PASS folder menu names cannot create empty or ambiguous path components
+PASS nested rename updates descendants without changing their IDs
+PASS creating a conflicting child chooses a unique name and reveals its parent
+PASS create and rename reserve orphan descendant namespaces instead of adopting their trees
+PASS new child belongs to its actual parent space without switching the current space
+PASS a stale parent cannot silently create a folder at the root
+PASS removing a folder promotes children with unique names and intact descendant membership
+PASS child promotion cannot capture another branch after its prefix changes
+PASS unique folder paths and preserved memberships survive persistence
+PASS Remove from Favorites keeps a foreign-space favorite visible and repairs old split references
+PASS Command-D on a foreign-space favorite preserves focused split and primary selection
+DragChecks: 65 checks, 0 failures
+All browser checks passed.

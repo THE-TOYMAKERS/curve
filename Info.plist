@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>Curve</string>
+	<key>CFBundleDisplayName</key>
+	<string>Curve</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.toymakers.curve</string>
+	<key>CFBundleVersion</key>
+	<string>4</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.3.0</string>
+	<key>CFBundleExecutable</key>
+	<string>Curve</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSSupportsAutomaticTermination</key>
+	<false/>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Websites you approve can use your camera for calls.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Websites you approve can use your microphone for calls.</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoadsInWebContent</key>
+		<true/>
+	</dict>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>Web Address</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>http</string>
+				<string>https</string>
+			</array>
+		</dict>
+	</array>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.toymakers.curve.drag-item</string>
+			<key>UTTypeDescription</key>
+			<string>Curve Drag Item</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.data</string>
+			</array>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.toymakers.curve.tab</string>
+			<key>UTTypeDescription</key>
+			<string>Curve Tab</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>com.toymakers.curve.drag-item</string>
+			</array>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.toymakers.curve.folder</string>
+			<key>UTTypeDescription</key>
+			<string>Curve Folder</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>com.toymakers.curve.drag-item</string>
+			</array>
+		</dict>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.toymakers.curve.space</string>
+			<key>UTTypeDescription</key>
+			<string>Curve Space</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>com.toymakers.curve.drag-item</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

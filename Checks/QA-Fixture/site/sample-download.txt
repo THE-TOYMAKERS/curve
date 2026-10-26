@@ -1,0 +1,2 @@
+Curve QA download
+This is synthetic browser test data. No user data is included.

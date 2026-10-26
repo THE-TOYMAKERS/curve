@@ -1,0 +1,44 @@
+name: Build and checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  macos:
+    runs-on: macos-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check scripts and bundle metadata
+        run: |
+          zsh -n build.sh run-checks.sh Checks/QA-Fixture/build-qa.sh Scripts/*.sh
+          plutil -lint Info.plist
+      - name: Run Foundation checks
+        run: swift run --disable-sandbox CoreChecks
+      - name: Run keyboard-router checks
+        run: |
+          mkdir -p .build/ci-module-cache
+          swiftc -parse-as-library -swift-version 5 \
+            -target "$(uname -m)-apple-macosx14.0" \
+            -module-cache-path .build/ci-module-cache \
+            Sources/Curve/KeyboardRouter.swift Checks/KeyboardRouterChecks.swift \
+            -o .build/keyboard-checks
+          .build/keyboard-checks
+      - name: Build release app
+        run: ./build.sh
+      - name: Verify release bundle
+        run: |
+          plutil -lint Curve.app/Contents/Info.plist
+          codesign --verify --deep --strict Curve.app

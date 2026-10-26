@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="field" x1="0.28" y1="1" x2="0.72" y2="0"><stop stop-color="#4a4fbf"/><stop offset=".48" stop-color="#6378e8"/><stop offset="1" stop-color="#99a8ff"/></linearGradient>
+    <radialGradient id="glow" gradientUnits="userSpaceOnUse" cx="300" cy="156" r="720"><stop stop-color="#dee8ff" stop-opacity=".25"/><stop offset="1" stop-color="#dee8ff" stop-opacity="0"/></radialGradient>
+    <linearGradient id="ribbon" x1=".4" y1="1" x2=".6" y2="0"><stop stop-color="#cfe0ff"/><stop offset="1" stop-color="#fff"/></linearGradient>
+    <filter id="shadow" x="-30%" y="-30%" width="160%" height="170%"><feDropShadow dx="0" dy="14" stdDeviation="11" flood-color="#1f2678" flood-opacity=".27"/></filter>
+    <clipPath id="tile"><rect x="48" y="48" width="928" height="928" rx="208"/></clipPath>
+  </defs>
+  <rect x="48" y="48" width="928" height="928" rx="208" fill="url(#field)"/>
+  <rect x="48" y="48" width="928" height="928" fill="url(#glow)" clip-path="url(#tile)"/>
+  <rect x="48" y="48" width="928" height="928" rx="208" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="2"/>
+  <path d="M728 308 C615 195 388 212 298 369 C203 535 294 759 499 774 C588 779 676 747 734 687" fill="none" stroke="url(#ribbon)" stroke-width="148" stroke-linecap="round" stroke-linejoin="round" filter="url(#shadow)"/>
+</svg>

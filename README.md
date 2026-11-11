@@ -14,6 +14,22 @@ The release ZIP contains **Curve.app**, a universal app for **Apple silicon and 
 
 Curve is an independent project inspired by Arc. It is not affiliated with Arc or The Browser Company and does not require an Arc service.
 
+### First launch of the current preview
+
+The current ZIP is an unnotarized preview. If macOS says Apple cannot verify Curve or check it for malicious software:
+
+1. Expand the ZIP and move **Curve.app** to **Applications**.
+2. Try opening Curve once, then choose **Done** or **Cancel** in the warning.
+3. Open **System Settings → Privacy & Security**, scroll to the security section, and click **Open Anyway** for Curve.
+4. Confirm **Open** and authenticate if asked. macOS saves an exception for that app.
+
+Starting with macOS Sequoia, **Control-click → Open** no longer overrides Gatekeeper for incorrectly signed or unnotarized apps. The Terminal command `open "/Applications/Curve.app"` also does not grant an exception; it launches Curve normally after approval. See [Apple's opening instructions](https://support.apple.com/en-us/102445) and [the Sequoia change](https://developer.apple.com/news/?id=saqachfa).
+
+If the warning instead says the app **is damaged** or **will damage your computer**, do not treat it as this ordinary verification warning. Re-download from the release page, compare the published SHA-256, and report the exact message.
+
+For a download that opens under normal Gatekeeper settings, Curve needs a **Developer ID Application** signature and **Apple notarization** with a stapled ticket. This distribution method does not require a Mac App Store listing. The current preview has not completed that process; see [Apple's Developer ID distribution guidance](https://developer.apple.com/developer-id/).
+
+
 ## Everyday use
 
 - **⌘T** opens the command bar for a new address, search, existing tab, or action.

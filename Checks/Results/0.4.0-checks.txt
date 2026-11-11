@@ -155,3 +155,10 @@ Standalone run 1: first request +7.73s; loaded/protection ready +7.76s; 29/29 pa
 Standalone run 2: no request/error while preparing through +35s; first request +39.34s; loaded/protection ready +39.67s; 29/29 passed.
 Final serial full suite above: first request +8.18s; loaded/protection ready +8.21s; 29/29 passed.
 An earlier full run failed seven initial-document assertions; it lacked state diagnostics, so its cause is unconfirmed. No production behavior or assertion deadline was changed to obtain these passes. A separate disk-exhausted run produced no usable result and is not counted.
+
+Post-suite test-harness cleanup recheck (production app unchanged):
+Full bundled strict list first compile/cache check: 6.95 seconds; 38212 domains.
+PASS: 48 protection checks: authority boundaries, native full-list compilation, cache reuse, fail-closed assets, real loopback ad/tracker requests, allowed scripts, and cosmetic filters
+New protection scratch directories remaining: 0
+Temporary protection build/module cache removed: True
+Project .build/.build-intel: absent.

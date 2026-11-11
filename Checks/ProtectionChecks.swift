@@ -90,14 +90,15 @@ struct ProtectionChecks {
     @MainActor static func main() {
         let app = NSApplication.shared
         app.setActivationPolicy(.prohibited)
-        DispatchQueue.global().asyncAfter(deadline: .now() + 120) {
-            fputs("FAIL: protection checks exceeded the 120-second native-helper deadline.\n", stderr)
-            exit(1)
-        }
         Task { @MainActor in
             let scratch = FileManager.default.temporaryDirectory.appendingPathComponent("CurveProtectionChecks-\(UUID().uuidString)", isDirectory: true)
             try? FileManager.default.createDirectory(at: scratch, withIntermediateDirectories: true)
-            defer { try? FileManager.default.removeItem(at: scratch) }
+            let watchdog = DispatchWorkItem {
+                try? FileManager.default.removeItem(at: scratch)
+                fputs("FAIL: protection checks exceeded the 120-second native-helper deadline.\n", stderr)
+                exit(1)
+            }
+            DispatchQueue.global().asyncAfter(deadline: .now() + 120, execute: watchdog)
             let source = URL(fileURLWithPath: CommandLine.arguments.dropFirst().first ?? "Resources/Protection", isDirectory: true)
             var failures: [String] = []
             var checks = 0
@@ -181,6 +182,13 @@ struct ProtectionChecks {
                 }
                 print("Full bundled strict list first compile/cache check: \(String(format: "%.2f", elapsed)) seconds; \(ContentProtection.bundledDomainCount) domains.")
             } catch { failures.append("Unexpected error: \(error)") }
+            // exit() does not unwind Swift defers. Clean both success and error
+            // paths explicitly while reporting an actual cleanup failure.
+            watchdog.cancel()
+            do {
+                if FileManager.default.fileExists(atPath: scratch.path) { try FileManager.default.removeItem(at: scratch) }
+                if FileManager.default.fileExists(atPath: scratch.path) { failures.append("Synthetic protection scratch directory remains after cleanup") }
+            } catch { failures.append("Synthetic protection scratch cleanup failed: \(error)") }
             print(failures.isEmpty ? "PASS: \(checks) protection checks: authority boundaries, native full-list compilation, cache reuse, fail-closed assets, real loopback ad/tracker requests, allowed scripts, and cosmetic filters" : "FAIL: \(failures.joined(separator: "; "))")
             fflush(stdout)
             exit(failures.isEmpty ? 0 : 1)

@@ -1,5 +1,6 @@
 #!/bin/zsh
-# Package the self-authored binary with an isolated synthetic profile.
+# UI-only developer fixture with an isolated profile outside the app sandbox.
+# Production containment is exercised separately by ../SandboxChecks.sh.
 set -euo pipefail
 if (( $# > 0 )); then SOURCE_APP="${1:A}"; else SOURCE_APP=""; fi
 if (( $# > 1 )); then QA_RUN_ROOT="${2:A}"; else QA_RUN_ROOT=""; fi
@@ -18,6 +19,8 @@ mkdir -p "$QA_APP/Contents/MacOS" "$QA_APP/Contents/Resources"
 cp "$SOURCE_APP/Contents/MacOS/Curve" "$QA_APP/Contents/MacOS/Curve"
 cp "$SOURCE_APP/Contents/Info.plist" "$QA_APP/Contents/Info.plist"
 if [[ -f "$SOURCE_APP/Contents/Resources/AppIcon.icns" ]]; then cp "$SOURCE_APP/Contents/Resources/AppIcon.icns" "$QA_APP/Contents/Resources/AppIcon.icns"; fi
+rm -rf "$QA_APP/Contents/Resources/Protection"
+cp -R "$SOURCE_APP/Contents/Resources/Protection" "$QA_APP/Contents/Resources/Protection"
 python3 - "$QA_APP/Contents/Info.plist" "$QA_RUN_ROOT/profile" <<'PY'
 import plistlib, sys, time
 p=sys.argv[1]
@@ -26,5 +29,5 @@ info.update(CFBundleIdentifier='com.toymakers.curve.qa',CFBundleDisplayName='Cur
 info.pop('CFBundleURLTypes',None)
 with open(p,'wb') as f: plistlib.dump(info,f)
 PY
-codesign --force --deep --sign - "$QA_APP"
+codesign --force --sign - --options runtime --timestamp=none "$QA_APP"
 print "$QA_APP"

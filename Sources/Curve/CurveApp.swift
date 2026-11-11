@@ -3,6 +3,12 @@ import AppKit
 import BrowserCore
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        // App-scoped only: private startup must not auto-reopen prior native
+        // windows. Persistent sessions remain available through the File menu.
+        UserDefaults.standard.set(false, forKey: "NSQuitAlwaysKeepsWindows")
+        NSApp.disableRelaunchOnLogin()
+    }
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSWindow.allowsAutomaticWindowTabbing = false
         NSApp.setActivationPolicy(.regular)
@@ -11,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.windows.first?.setFrameAutosaveName("CurveMainWindow")
     }
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool { false }
+    func applicationSupportsSecureRestorableState(_ app: NSApplication) -> Bool { true }
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
         if !flag { BrowserCoordinator.shared.openNormalWindow?() }
         return true
@@ -30,6 +37,10 @@ struct CurveApp: App {
             .commands { BrowserCommands() }
         WindowGroup("Private · Curve", id: "private") { BrowserWindowHost(mode: .incognito) }
             .windowStyle(.hiddenTitleBar).defaultSize(width: 1160, height: 780)
+        WindowGroup("Persistent · Curve", id: "persistent", for: UUID.self) { $sessionID in
+            BrowserWindowHost(mode: .normal, sessionID: sessionID, respectPrivateDefault: false)
+        } defaultValue: { BrowserCoordinator.mainID }
+            .windowStyle(.hiddenTitleBar).defaultSize(width: 1280, height: 820)
         WindowGroup("Little Curve · Curve", id: "little") { BrowserWindowHost(mode: .little) }
             .windowStyle(.hiddenTitleBar).defaultSize(width: 720, height: 600)
     }
@@ -47,12 +58,14 @@ struct BrowserCommands: Commands {
             Button("New Tab") { store?.showPalette(.newTab) }.keyboardShortcut("t", modifiers: .command)
             Button("New Window") { openWindow(id: "browser", value: UUID()) }.keyboardShortcut("n", modifiers: .command)
             Button("New Incognito Window") { openWindow(id: "private") }.keyboardShortcut("n", modifiers: [.command, .shift])
+            Button("New Persistent Window") { openWindow(id: "persistent", value: BrowserCoordinator.shared.nextPersistentSessionID()) }
             Button("Open Little Curve") { openWindow(id: "little") }.keyboardShortcut("n", modifiers: [.command, .option])
             Divider()
             Button("New Space…") { store?.addSpace() }
             Button("New Folder…") { store?.addFolder() }
             Button("Open Location…") { store?.showPalette(.navigate) }.keyboardShortcut("l", modifiers: .command)
             Button("Import from Arc…") { store?.importArc() }
+            Button("Import Saved Curve Session…") { store?.importSavedSession() }
             Button("Export Session…") { store?.exportSession() }
             Divider()
             Button(tab == nil ? "Close Window" : "Close Tab") { store?.performKeyAction(.closeTab) }.keyboardShortcut("w", modifiers: .command)
@@ -120,6 +133,12 @@ struct BrowserCommands: Commands {
                     ResponderCommand("Underline", "underline:").keyboardShortcut("u", modifiers: .command)
                 }
             }
+        }
+        CommandMenu("Privacy") {
+            Button("Curve Shields…") { store?.showPrivacy() }
+            Button("Clear Browsing Data…") { store?.showPrivacy() }
+            Divider()
+            Button("New Private Window") { openWindow(id: "private") }
         }
         CommandMenu("Spaces") {
             if let store {

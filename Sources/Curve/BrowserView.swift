@@ -122,6 +122,7 @@ struct BrowserView: View {
             .sheet(isPresented: $store.settingsVisible) { SettingsPanel(store: store, engine: engine) }
             .sheet(isPresented: $store.helpVisible) { ShortcutsPanel() }
             .sheet(isPresented: $store.downloadsVisible) { DownloadsPanel(engine: engine) }
+            .sheet(isPresented: $store.privacyVisible) { PrivacyPanel(store: store, engine: engine) }
         }
         .browserDragCoordinateSpace(store: store)
         .frame(minWidth: minimumWidth, minHeight: 520)
@@ -218,12 +219,24 @@ struct Sidebar: View {
             Button { store.showPalette(.navigate) } label: {
                 HStack(spacing: 9) {
                     Image(systemName: "magnifyingglass").font(.system(size: 13, weight: .medium))
-                    Text(address).lineLimit(1).font(.system(size: 12, weight: .medium))
+                    Text(address).lineLimit(1).truncationMode(store.selectedTab?.url.hasPrefix("curve:") == false ? .head : .tail)
+                        .font(.system(size: 12, weight: .medium))
                     Spacer(minLength: 0)
                     Text("⌘L").font(.system(size: 10)).opacity(0.45)
                 }.foregroundStyle(.primary.opacity(0.55)).padding(.horizontal, 12).frame(height: 36)
                     .background(.primary.opacity(0.055), in: RoundedRectangle(cornerRadius: 9))
             }.buttonStyle(ChromePressStyle()).help("Search or Enter URL · ⌘L").padding(.horizontal, 10)
+            HStack(spacing: 6) {
+                Image(systemName: engine.isPrivate ? "eye.slash" : "externaldrive")
+                Text(engine.isPrivate ? "PRIVATE" : "PERSISTENT")
+                    .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                Spacer(minLength: 3)
+                Button { store.showPrivacy() } label: {
+                    Label("Shields", systemImage: page.protectionReady ? "checkmark.shield" : "shield.lefthalf.filled")
+                        .font(.system(size: 10, weight: .medium))
+                }.buttonStyle(.plain).help("Privacy, ads, trackers and browsing data")
+            }.font(.system(size: 10)).foregroundStyle(.primary.opacity(0.68))
+                .padding(.horizontal, 13).padding(.top, 9).padding(.bottom, 2)
             if !store.favorites.isEmpty {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 6), count: min(4, store.favorites.count)), spacing: 6) {
                     ForEach(store.favorites) { tab in
@@ -335,7 +348,7 @@ struct Sidebar: View {
     private var page: WebPageState { engine.state(id: store.currentID ?? UUID()) }
     private var address: String {
         guard let tab = store.state.tabs.first(where: { $0.id == store.currentID }), !tab.url.hasPrefix("curve:") else { return "Search or Enter URL…" }
-        return URL(string: tab.url)?.host?.replacingOccurrences(of: "www.", with: "") ?? tab.url
+        return URL(string: tab.url).map { URLSecurity.displayHost(for: $0) } ?? tab.url
     }
 }
 
@@ -424,14 +437,13 @@ struct IconButton: View {
 struct SiteIcon: View {
     var url: String
     var size: CGFloat = 18
-    private var host: String { URL(string: url)?.host?.replacingOccurrences(of: "www.", with: "") ?? "" }
+    private var host: String { URL(string: url).flatMap { URLSecurity.asciiHost(for: $0) } ?? "" }
     private var symbol: String? {
         if url.hasPrefix("curve:") { return "circle.hexagongrid" }
-        if host.contains("apple") { return "apple.logo" }
-        if host.contains("github") { return "chevron.left.forwardslash.chevron.right" }
-        if host.contains("youtube") { return "play.rectangle.fill" }
-        if host.contains("mail") { return "envelope.fill" }
-        if host.contains("arena") || host.contains("are.na") { return "asterisk" }
+        if URLSecurity.isHost(host, inDomain: "apple.com") { return "apple.logo" }
+        if URLSecurity.isHost(host, inDomain: "github.com") { return "chevron.left.forwardslash.chevron.right" }
+        if URLSecurity.isHost(host, inDomain: "youtube.com") { return "play.rectangle.fill" }
+        if URLSecurity.isHost(host, inDomain: "are.na") { return "asterisk" }
         return nil
     }
     private var hue: Double { Double(host.utf8.reduce(0) { ($0 + Int($1)) % 360 }) / 360 }
@@ -466,6 +478,7 @@ struct WindowSetup: NSViewRepresentable {
         guard let window else { return }
         window.tabbingMode = .disallowed
         window.titlebarAppearsTransparent = true; window.titleVisibility = .hidden; window.backgroundColor = .clear; window.isMovableByWindowBackground = false
+        window.isRestorable = false
         let base: CGFloat = store.mode == .little ? 500 : 760
         let width: CGFloat = store.splitID != nil && !store.activeSpace.splitVertical ? max(base, (store.state.sidebarVisible ? store.state.sidebarWidth + 4 : 8) + 492) : base
         window.minSize = NSSize(width: width, height: 520)

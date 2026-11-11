@@ -25,6 +25,7 @@ jobs:
         run: |
           zsh -n build.sh run-checks.sh Checks/QA-Fixture/build-qa.sh Scripts/*.sh
           plutil -lint Info.plist
+          plutil -lint Curve.entitlements
       - name: Generate Ribbon C app icon
         run: ./Scripts/make-icon.sh
       - name: Run Foundation checks
@@ -38,9 +39,49 @@ jobs:
             Sources/Curve/KeyboardRouter.swift Checks/KeyboardRouterChecks.swift \
             -o .build/keyboard-checks
           .build/keyboard-checks
+      - name: Check origin display and HTTPS transport rules
+        run: |
+          mkdir -p .build/security-checks/module-cache
+          swiftc -parse-as-library -swift-version 5 \
+            -target "$(uname -m)-apple-macosx14.0" \
+            -module-cache-path .build/security-checks/module-cache \
+            Sources/BrowserCore/URLSecurity.swift Checks/URLSecurityChecks.swift \
+            -o .build/security-checks/url-security
+          .build/security-checks/url-security
+      - name: Verify release security failure paths
+        run: ./Checks/ReleaseSecurityChecks.sh
+      - name: Check protected profile persistence
+        run: |
+          mkdir -p .build/ci-storage/module-cache
+          swiftc -parse-as-library -swift-version 5 \
+            -target "$(uname -m)-apple-macosx14.0" \
+            -module-cache-path .build/ci-storage/module-cache \
+            -emit-library -emit-module -module-name BrowserCore Sources/BrowserCore/*.swift \
+            -o .build/ci-storage/libBrowserCore.dylib -emit-module-path .build/ci-storage/BrowserCore.swiftmodule \
+            -Xlinker -install_name -Xlinker @rpath/libBrowserCore.dylib
+          swiftc -parse-as-library -swift-version 5 \
+            -target "$(uname -m)-apple-macosx14.0" \
+            -module-cache-path .build/ci-storage/module-cache \
+            -I .build/ci-storage -L .build/ci-storage -lBrowserCore \
+            -Xlinker -rpath -Xlinker @executable_path \
+            Checks/PrivacyStorageChecks.swift -o .build/ci-storage/privacy-storage
+          .build/ci-storage/privacy-storage
+      - name: Verify native content blocking
+        run: |
+          swiftc -parse-as-library -swift-version 5 \
+            -target "$(uname -m)-apple-macosx14.0" \
+            -module-cache-path .build/ci-storage/module-cache \
+            -I .build/ci-storage -L .build/ci-storage -lBrowserCore \
+            -Xlinker -rpath -Xlinker @executable_path \
+            Sources/Curve/ContentProtection.swift Checks/ProtectionChecks.swift \
+            -o .build/ci-storage/protection-checks
+          .build/ci-storage/protection-checks "$PWD/Resources/Protection"
+      - name: Exercise actual sandbox containment
+        run: ./Checks/SandboxChecks.sh
       - name: Build release app
         run: ./build.sh
       - name: Verify release bundle
         run: |
           plutil -lint Curve.app/Contents/Info.plist
           codesign --verify --deep --strict Curve.app
+          ./Scripts/verify-app.sh Curve.app

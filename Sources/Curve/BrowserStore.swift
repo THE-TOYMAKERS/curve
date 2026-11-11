@@ -30,6 +30,7 @@ final class BrowserStore: ObservableObject {
     @Published var settingsVisible = false
     @Published var helpVisible = false
     @Published var downloadsVisible = false
+    @Published var privacyVisible = false
     @Published var findVisible = false
     @Published var findQuery = ""
     @Published var toast: String?
@@ -55,10 +56,12 @@ final class BrowserStore: ObservableObject {
     private var mruCycle: [UUID] = []
     private var mruIndex = 0
     private var cycling = false
+    private var privacyErasureInProgress = false
+    private var suppressOldPageHistory = false
 
-    init(mode: BrowserWindowMode = .normal, directory overrideDirectory: URL? = nil, seed: BrowserState? = nil) {
+    init(mode: BrowserWindowMode = .normal, directory overrideDirectory: URL? = nil, seed: BrowserState? = nil, engine engineOverride: WebEngine? = nil) {
         self.mode = mode
-        engine = WebEngine(isPrivate: mode == .incognito)
+        engine = engineOverride ?? WebEngine(isPrivate: mode != .normal)
         let directory = overrideDirectory ?? BrowserCoordinator.dataDirectory
         persistence = StatePersistence(directory: directory)
         let historyDirectory = BrowserCoordinator.dataDirectory
@@ -70,30 +73,27 @@ final class BrowserStore: ObservableObject {
         }
         if (state.appearanceVersion ?? 0) < 2 {
             if state.sidebarWidth == 248 { state.sidebarWidth = 224 }
-            if mode == .normal && !BrowserCoordinator.hasDataDirectoryOverride {
-                let arcSidebar = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/Arc/StorableSidebar.json")
-                if let refreshed = try? ArcSidebarImporter.refreshThemes(from: arcSidebar, into: state) { state = refreshed }
-            }
             state.appearanceVersion = 2
         }
         state.archiveExpired(now: Date())
         engine.onPageChanged = { [weak self] id, title, url in
-            guard let self, let i = self.state.tabs.firstIndex(where: { $0.id == id }) else { return }
+            guard let self, !self.privacyErasureInProgress, let i = self.state.tabs.firstIndex(where: { $0.id == id }) else { return }
             var changed = false
             let visibleTitle = self.state.tabs[i].customTitle ?? title
             if !visibleTitle.isEmpty && visibleTitle != self.state.tabs[i].title { self.state.tabs[i].title = visibleTitle; changed = true }
             if !url.isEmpty && url != "about:blank" && self.state.tabs[i].url != url { self.state.tabs[i].url = url; changed = true }
             if self.engine.state(id: id).error == nil && self.errors[id] != nil { self.errors[id] = nil }
             if changed { self.saveSoon() }
-            if !self.engine.state(id: id).isLoading && self.lastHistoryURL[id] != url && ["https", "http"].contains(URL(string: url)?.scheme ?? "") {
+            if !self.suppressOldPageHistory && !self.engine.state(id: id).isLoading && self.lastHistoryURL[id] != url && ["https", "http"].contains(URL(string: url)?.scheme ?? "") {
                 self.lastHistoryURL[id] = url; self.recordHistory(title: title, url: url)
             }
         }
         engine.onOpenTab = { [weak self] url in self?.open(url.absoluteString) }
+        engine.onUserNavigation = { [weak self] in self?.suppressOldPageHistory = false }
         engine.onPeek = { [weak self] url in self?.showPeek(url) }
         engine.shouldPeekNavigation = { [weak self] id, destination, origin in
             guard let self, self.peek?.id != id, let tab = self.state.tabs.first(where: { $0.id == id }), tab.kind != .today,
-                  let from = origin?.host?.replacingOccurrences(of: "www.", with: ""), let to = destination.host?.replacingOccurrences(of: "www.", with: "") else { return false }
+                  let origin, let from = URLSecurity.asciiHost(for: origin), let to = URLSecurity.asciiHost(for: destination) else { return false }
             return from != to
         }
         engine.onCloseTab = { [weak self] id in self?.close(id) }
@@ -122,6 +122,7 @@ final class BrowserStore: ObservableObject {
         if mode == .normal, overrideDirectory == nil, BrowserCoordinator.legacyMigrationFailed {
             toast = "Couldn’t copy your saved Aperture session. Its original files are unchanged."
         }
+        BrowserCoordinator.shared.register(self)
     }
 
     var activeSpace: BrowserSpace { state.spaces.first(where: { $0.id == state.activeSpaceID }) ?? state.spaces[0] }
@@ -141,7 +142,7 @@ final class BrowserStore: ObservableObject {
         }
     }
     func saveNow() {
-        guard mode == .normal else { return }
+        guard mode == .normal, !privacyErasureInProgress else { return }
         do { try persistence.save(state) }
         catch { notify("Couldn’t save your session: \(error.localizedDescription)") }
     }
@@ -153,6 +154,8 @@ final class BrowserStore: ObservableObject {
         }
     }
     func select(_ id: UUID) {
+        guard !privacyErasureInProgress else { return }
+        suppressOldPageHistory = false
         state.select(id); focusedPane = nil; saveSoon(); trim()
     }
     func switchSpace(_ id: UUID) {
@@ -166,7 +169,9 @@ final class BrowserStore: ObservableObject {
         switchSpace(state.spaces[(i + delta + state.spaces.count) % state.spaces.count].id)
     }
     func open(_ input: String, kind: TabKind = .today, inSplit: Bool = false) {
+        guard !privacyErasureInProgress else { return }
         guard let url = URLResolver.resolve(input, searchEngine: state.searchEngine) else { notify("That address can’t be opened."); return }
+        suppressOldPageHistory = false
         let old = state.selectedTabID
         let id = state.open(url: url.absoluteString, title: url.scheme == "curve" ? "A little room for the internet" : (url.host ?? "New Tab"), kind: kind, spaceID: state.activeSpaceID, folderID: nil)
         errors[id] = nil
@@ -178,8 +183,10 @@ final class BrowserStore: ObservableObject {
         open("curve://start")
     }
     func navigate(_ input: String) {
+        guard !privacyErasureInProgress else { return }
         guard let id = currentID, let i = state.tabs.firstIndex(where: { $0.id == id }) else { open(input); return }
         guard let url = URLResolver.resolve(input, searchEngine: state.searchEngine) else { notify("That address can’t be opened."); return }
+        suppressOldPageHistory = false
         state.tabs[i].url = url.absoluteString; state.tabs[i].title = url.host ?? "New Tab"
         errors[id] = nil
         if url.scheme != "curve" { engine.load(id: id, url: url) } else { engine.close(id: id) }
@@ -445,6 +452,7 @@ final class BrowserStore: ObservableObject {
         return name.isEmpty ? nil : name
     }
     func importArc() {
+        guard !privacyErasureInProgress else { return }
         let path = FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support/Arc/StorableSidebar.json")
         if FileManager.default.fileExists(atPath: path.path) { importFile(path); return }
         let panel = NSOpenPanel(); panel.title = "Import Arc Sidebar"; panel.message = "Choose Arc’s StorableSidebar.json. Only spaces, folders, and tab addresses are imported."; panel.allowedContentTypes = [.json]; panel.allowsMultipleSelection = false
@@ -458,16 +466,52 @@ final class BrowserStore: ObservableObject {
         } catch { notify("Import failed: \(error.localizedDescription)") }
     }
     func exportSession() {
+        guard !privacyErasureInProgress else { return }
         let panel = NSSavePanel(); panel.nameFieldStringValue = "Curve-session.json"; panel.allowedContentTypes = [.json]
         guard panel.runModal() == .OK, let url = panel.url else { return }
         do { let encoder = JSONEncoder(); encoder.outputFormatting = [.prettyPrinted, .sortedKeys]; try encoder.encode(state).write(to: url, options: .atomic); notify("Session exported") }
         catch { notify(error.localizedDescription) }
+    }
+    func importSavedSession() {
+        guard !privacyErasureInProgress else { return }
+        let panel = NSOpenPanel()
+        panel.title = "Import Saved Curve Session"
+        panel.message = "Choose an exported Curve session or the state.json from your previous Curve profile. This replaces the tabs in this window. Passwords and website cookies are not imported."
+        panel.allowedContentTypes = [.json]
+        panel.canChooseDirectories = false; panel.allowsMultipleSelection = false
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let handle = try FileHandle(forReadingFrom: url)
+            defer { try? handle.close() }
+            let data = try handle.read(upToCount: 10_000_001) ?? Data()
+            guard data.count <= 10_000_000 else { throw CocoaError(.fileReadTooLarge) }
+            var imported = try JSONDecoder().decode(BrowserState.self, from: data)
+            guard imported.tabs.count <= 5000, imported.spaces.count <= 128, imported.folders.count <= 4096 else { throw CocoaError(.fileReadCorruptFile) }
+            for tab in imported.tabs + imported.archive.map(\.tab) {
+                for text in [tab.url, tab.savedURL].compactMap({ $0 }) {
+                    guard text.utf8.count <= 16_384,
+                          text == "curve://start" || text == "aperture://start" ||
+                            (URL(string: text).map { ["http", "https"].contains($0.scheme?.lowercased() ?? "") && URLSecurity.asciiHost(for: $0) != nil } ?? false) else {
+                        throw CocoaError(.fileReadCorruptFile)
+                    }
+                }
+            }
+            imported.repair()
+            engine.beginPrivacyReset()
+            state = imported; focusedPane = nil; peek = nil; errors.removeAll(); lastHistoryURL.removeAll()
+            engine.endPrivacyReset()
+            saveNow()
+            notify(mode == .normal ? "Saved Curve session imported" : "Session imported into this private window only")
+        } catch { notify("Session could not be imported: \(error.localizedDescription)") }
     }
 }
 
 
 extension BrowserStore {
     func recordHistory(title: String, url: String) {
+        guard !privacyErasureInProgress else { return }
         if mode == .normal { history = historyPersistence.load() }
         history.removeAll { $0.url == url }
         history.insert(HistoryEntry(title: title.isEmpty ? (URL(string: url)?.host ?? url) : title, url: url), at: 0)
@@ -514,7 +558,7 @@ extension BrowserStore {
     func performKeyAction(_ action: BrowserKeyAction) {
         if case .closeTab = action {
             if paletteVisible { paletteVisible = false; return }
-            if archiveVisible || settingsVisible || helpVisible || downloadsVisible || historyVisible { archiveVisible = false; settingsVisible = false; helpVisible = false; downloadsVisible = false; historyVisible = false; return }
+            if archiveVisible || settingsVisible || helpVisible || downloadsVisible || historyVisible || privacyVisible { archiveVisible = false; settingsVisible = false; helpVisible = false; downloadsVisible = false; historyVisible = false; privacyVisible = false; return }
         }
         switch action {
         case .newTab: showPalette(.newTab)
@@ -569,10 +613,49 @@ extension BrowserStore {
         subscriptions.removeAll(); onNewWindow = nil; lastHistoryURL.removeAll(); engine.shutdown()
         if mode != .normal {
             history.removeAll(); removedSpace = nil; peek = nil; errors.removeAll()
+            query = ""; findQuery = ""; toast = nil; paletteVisible = false; findVisible = false
             let empty = BrowserSpace(name: mode == .incognito ? "Private" : "Little Curve", emoji: "◌", colorHex: "C0C1D0")
             state = BrowserState(spaces: [empty])
         }
         if BrowserCoordinator.shared.activeStore === self { BrowserCoordinator.shared.activeStore = nil }
+        BrowserCoordinator.shared.unregister(self)
+    }
+}
+
+extension BrowserStore {
+    func showPrivacy() {
+        settingsVisible = false; historyVisible = false; archiveVisible = false
+        helpVisible = false; downloadsVisible = false; privacyVisible = true
+    }
+
+    func prepareForPrivacyErasure(history clearHistory: Bool, websiteData: Bool, savedTabs: Bool) {
+        privacyErasureInProgress = true
+        saveTask?.cancel()
+        query = ""; findQuery = ""; paletteVisible = false; findVisible = false; toast = nil
+        drag.finish(cancelled: true)
+        if clearHistory || savedTabs { history.removeAll(); state.archive.removeAll(); removedSpace = nil }
+        if clearHistory || savedTabs { suppressOldPageHistory = true }
+        if savedTabs {
+            state.tabs.removeAll(); state.folders.removeAll(); state.archive.removeAll()
+            for i in state.spaces.indices { state.spaces[i].selectedTabID = nil; state.spaces[i].splitTabID = nil }
+        }
+        if websiteData || savedTabs {
+            engine.beginPrivacyReset()
+            if !savedTabs { state.tabs.removeAll { $0.kind == .today } }
+            for i in state.spaces.indices { state.spaces[i].splitTabID = nil }
+            _ = state.open(url: "curve://start", title: mode == .incognito ? "Private browsing" : "A fresh start")
+            focusedPane = nil; peek = nil; errors.removeAll()
+            state.repair()
+        }
+        // Retained active/bookmarked pages must not be re-added to history by
+        // progress or title callbacks after clearing.
+        lastHistoryURL = Dictionary(uniqueKeysWithValues: state.tabs.map { ($0.id, $0.url) })
+    }
+
+    func finishPrivacyErasure() {
+        engine.endPrivacyReset()
+        privacyErasureInProgress = false
+        saveNow()
     }
 }
 

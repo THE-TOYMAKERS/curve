@@ -8,3 +8,12 @@
 dist/
 .qa-run/
 *.log
+*.p12
+*.p8
+*.key
+*.pem
+*.cer
+*.certSigningRequest
+*.provisionprofile
+*.keychain
+*.keychain-db

@@ -1,0 +1,21 @@
+{
+  "files": [
+    {
+      "bytes": 306075,
+      "domains": 20411,
+      "path": "ads.txt",
+      "sha256": "dab8e5580364edae9783a6786263576ae5b0ae34f1b354eb58caf4311a9ea4bb"
+    },
+    {
+      "bytes": 259965,
+      "domains": 17801,
+      "path": "trackers.txt",
+      "sha256": "5551d002b0d477280cc47e026eab3a9499e0e9a30c44e335356eb9ed5113d8d4"
+    }
+  ],
+  "license": "Unlicense",
+  "revision": "3a0c0fcd8b22163e4d295eea1a6bca580518227e",
+  "schemaVersion": 1,
+  "source": "https://github.com/ShadowWhisperer/BlockLists",
+  "sourceDate": "2026-11-11"
+}

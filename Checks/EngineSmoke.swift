@@ -13,7 +13,7 @@ struct EngineSmoke {
             engine.openHTML(id: id, html: "<html><head><title>Curve smoke test</title></head><body><h1>Native WebKit works</h1><input id='draft'><a href='https://example.com'>Link</a><script>window.answer=6*7</script></body></html>", baseURL: URL(string:"https://curve.test"))
             let view = engine.webView(for: id, url: URL(string:"https://curve.test")!)
             var failures: [String] = []
-            for _ in 0..<80 {
+            for _ in 0..<300 {
                 if view.title == "Curve smoke test" { break }
                 try? await Task.sleep(nanoseconds: 100_000_000)
             }

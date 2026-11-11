@@ -141,7 +141,7 @@ struct StoreIntegration {
             try! StatePersistence(directory: sharedDirectory).save(publicSeed)
             let previousActive = BrowserCoordinator.shared.activeStore
             BrowserCoordinator.shared.activeStore = privateStore
-            let normalAfterPrivate = BrowserCoordinator.shared.makeStore(mode: .normal, sessionID: UUID())
+            let normalAfterPrivate = BrowserCoordinator.shared.makeStore(mode: .normal, sessionID: UUID(), respectPrivateDefault: false)
             check(normalAfterPrivate.state.tabs.contains { $0.id == publicSeedID } && !normalAfterPrivate.state.tabs.contains { $0.url.contains("private.invalid") }, "new normal window seeds saved normal state while private window is active")
             normalAfterPrivate.saveNow()
             let persistedNormal = normalAfterPrivate.persistence.load()

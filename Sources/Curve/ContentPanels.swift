@@ -20,12 +20,13 @@ struct WebPane: View {
                     Spacer(minLength: 0)
                     Button { store.focusedPane = tab.id; store.showPalette(.navigate) } label: {
                         HStack(spacing: 5) {
-                            Image(systemName: tab.url.hasPrefix("https:") ? "lock" : "globe").font(.system(size: 9))
-                            Text(URL(string: tab.url)?.host?.replacingOccurrences(of: "www.", with: "") ?? tab.title)
-                                .font(.system(size: 12, weight: .medium)).lineLimit(1)
+                            Image(systemName: secureDisplayedOrigin ? "lock" : "lock.slash").font(.system(size: 9))
+                            Text(URL(string: tab.url).map { URLSecurity.displayHost(for: $0) } ?? tab.title)
+                                .font(.system(size: 12, weight: .medium, design: .monospaced)).lineLimit(1).truncationMode(.head)
                         }.foregroundStyle(.primary.opacity(0.48)).contentShape(Rectangle())
                     }.buttonStyle(.plain).help("Edit address · ⌘L")
                     Spacer(minLength: 0)
+                    IconButton("shield.lefthalf.filled", help: "Curve Shields & Privacy") { store.showPrivacy() }
                     if isSplit {
                         IconButton("rectangle.split.1x2", help: "Rotate Split View") { store.toggleSplitOrientation() }
                         IconButton("xmark", help: "Close Split View · ⌃⇧−") { store.setSplit(nil) }
@@ -60,11 +61,22 @@ struct WebPane: View {
         .animation(BrowserMotion.quick(reduceMotion: reduceMotion), value: store.findVisible)
     }
 
+    private var secureDisplayedOrigin: Bool {
+        let page = engine.state(id: tab.id)
+        guard page.isSecure, let loaded = URL(string: page.url), let displayed = URL(string: tab.url) else { return false }
+        return URLSecurity.displayOrigin(for: loaded) == URLSecurity.displayOrigin(for: displayed)
+    }
+
     @ViewBuilder private var page: some View {
         ZStack {
             if tab.url.hasPrefix("curve:") { StartPage(store: store) }
             else if let url = URL(string: tab.url), ["https", "http"].contains(url.scheme ?? "") {
                 WebContentView(webView: engine.webView(for: tab.id, url: url)).id(tab.id)
+                if engine.state(id: tab.id).isLoading && !engine.state(id: tab.id).protectionReady {
+                    ProgressView("Preparing protection…").padding(24)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                        .background(Color(nsColor: .windowBackgroundColor))
+                }
             } else {
                 ContentUnavailableView("This address can’t be opened", systemImage: "globe", description: Text(tab.url))
             }
@@ -281,14 +293,16 @@ struct SettingsPanel: View {
                 Section("Your data") {
                     HStack {
                         Button("Import Arc Sidebar…") { store.importArc() }
+                        Button("Import Curve Session…") { store.importSavedSession() }
                         Button("Export Session…") { store.exportSession() }
                         Spacer()
                     }
                     Text(store.mode == .incognito ? "This window has a temporary profile. Its cookies, history, and session stay out of your saved browser data." : "Websites share one persistent browser profile. Logins are independent of Arc. No account or analytics service is required.").font(.caption).foregroundStyle(.secondary)
+                    Button("Privacy, Shields & Clear Browsing Data…") { store.showPrivacy() }
                 }
             }.formStyle(.grouped)
             HStack {
-                Text("Curve 0.3 · Native WebKit").font(.caption).foregroundStyle(.secondary)
+                Text("Curve 0.4 · Native WebKit").font(.caption).foregroundStyle(.secondary)
                 Spacer()
                 Text("\(engine.liveCount) live views · \(store.state.tabs.count) saved tabs").font(.caption).foregroundStyle(.secondary)
             }
